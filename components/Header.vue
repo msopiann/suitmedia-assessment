@@ -42,7 +42,7 @@
         </li>
       </ul>
 
-      <div class="lg:hidden">
+      <div class="lg:hidden" ref="menuContainer">
         <button
           @click="toggleMenu"
           class="lg:hidden flex items-center text-white focus:outline-none"
@@ -67,7 +67,6 @@
             'sm text-white flex lg:flex-row flex-col lg:space-x-4 lg:space-y-0 space-y-4 absolute lg:static top-full left-0 lg:top-auto lg:left-auto bg-orange-500 lg:bg-transparent transition-transform lg:transition-none',
             { 'translate-x-0': isMenuOpen, '-translate-x-full': !isMenuOpen },
           ]"
-          @click="closeMenu"
         >
           <li :class="{ active: isActive('/work'), 'pb-4': true }">
             <NuxtLink to="/work" class="menu-item">Work</NuxtLink>
@@ -93,8 +92,10 @@
   </header>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import { defineComponent, onMounted, onBeforeUnmount, ref } from "vue";
+
+export default defineComponent({
   data() {
     return {
       isScrolledUp: true,
@@ -112,22 +113,35 @@ export default {
     },
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
+      if (this.isMenuOpen) {
+        document.addEventListener("click", this.handleClickOutside);
+      } else {
+        document.removeEventListener("click", this.handleClickOutside);
+      }
     },
     closeMenu() {
       this.isMenuOpen = false;
+      document.removeEventListener("click", this.handleClickOutside);
     },
-    isActive(route) {
+    isActive(route: string) {
       return this.$route.path === route;
+    },
+    handleClickOutside(event: MouseEvent) {
+      const menuContainer = this.$refs.menuContainer as HTMLElement;
+      if (menuContainer && !menuContainer.contains(event.target as Node)) {
+        this.closeMenu();
+      }
     },
   },
   mounted() {
     this.lastScrollY = window.scrollY;
     window.addEventListener("scroll", this.handleScroll);
   },
-  beforeUnmounted() {
+  beforeUnmount() {
     window.removeEventListener("scroll", this.handleScroll);
+    document.removeEventListener("click", this.handleClickOutside);
   },
-};
+});
 </script>
 
 <style scoped>
@@ -179,19 +193,14 @@ export default {
     width: 100%;
     top: 100%;
     left: 0;
-    background: rgba(
-      255,
-      165,
-      0,
-      0.9
-    ); /* Background dengan transparansi untuk menu mobile */
+    background: rgba(255, 165, 0, 0.7);
     padding: 1rem;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transform: translateX(-100%); /* Menu tersembunyi di luar layar */
+    transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
   }
   .sm.translate-x-0 {
-    transform: translateX(0); /* Menu ditampilkan */
+    transform: translateX(0);
   }
 }
 </style>
